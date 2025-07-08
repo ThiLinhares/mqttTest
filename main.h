@@ -19,9 +19,9 @@
 #define LED_PIN_G 11
 #define LED_PIN_B 12
 #define LED_PIN_R 13
-#define MONITOR_PIN 5 // Pino a ser monitorado
+#define MONITOR_PIN 15 // Pino a ser monitorado
 #define PWM_STEPS 2000
-#define DEBOUNCE_DELAY_MS 200 // Reduzido para melhor responsividade do botão
+#define DEBOUNCE_DELAY_MS 200
 #define FADE_STEP_DELAY (100) 
 /* END */
 
@@ -34,7 +34,7 @@
 /* END*/
 
 /*VARIAVEIS*/
-extern bool monitor_pin_on; // Estado do pino monitorado (ON/OFF)
+extern bool monitor_pin_on; 
 extern bool alarme;
 extern bool posicao_js;
 extern bool ledverdestatus;
@@ -59,5 +59,6 @@ void gpio_event_string(char *buf, uint32_t events);
 void js();
 void setup_pwm(uint gpio_pin);
 void update_pwm(uint gpio_pin);
-void pwm_led(uint gpio_pin, uint brilho);
+// <<< ALTERADO DE pwm_led PARA led_control >>>
+void led_control(uint gpio_pin, bool on);
 /* END */

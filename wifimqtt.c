@@ -13,6 +13,38 @@ float read_onboard_temperature() {
     return temp_celsius;
 }
 
+static void mqtt_pub_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags) {
+    char buffer[BUFFER_SIZE];
+    if (len < BUFFER_SIZE) {
+        memcpy(buffer, data, len);
+        buffer[len] = '\0';
+        DEBUG_printf("Command received: %s\n", buffer);
+
+        // <<< CORREÇÃO: CHAMANDO A NOVA FUNÇÃO led_control >>>
+        // Comandos para o LED Vermelho (GPIO 13)
+        if (strcmp(buffer, "red_on") == 0) {
+            led_control(LED_PIN_R, true); // true para ligar
+        } else if (strcmp(buffer, "red_off") == 0) {
+            led_control(LED_PIN_R, false); // false para desligar
+        }
+        // Comandos para o LED Verde (GPIO 11)
+        else if (strcmp(buffer, "green_on") == 0) {
+            led_control(LED_PIN_G, true);
+        } else if (strcmp(buffer, "green_off") == 0) {
+            led_control(LED_PIN_G, false);
+        }
+        // Comandos para o LED Azul (GPIO 12)
+        else if (strcmp(buffer, "blue_on") == 0) {
+            led_control(LED_PIN_B, true);
+        } else if (strcmp(buffer, "blue_off") == 0) {
+            led_control(LED_PIN_B, false);
+        }
+    }
+}
+
+// --- O restante do arquivo (funções de conexão, publicação, etc.) permanece o mesmo ---
+// ... (copie o resto do seu wifimqtt.c aqui se necessário, mas as funções abaixo não precisam de mudança)
+
 void dns_found(const char *name, const ip_addr_t *ipaddr, void *callback_arg) {
     MQTT_CLIENT_T *state = (MQTT_CLIENT_T*)callback_arg;
     if (ipaddr) {
@@ -33,20 +65,23 @@ void run_dns_lookup(MQTT_CLIENT_T *state) {
     }
 }
 
+static void mqtt_pub_start_cb(void *arg, const char *topic, u32_t tot_len) {
+    DEBUG_printf("Incoming message on topic: %s, size: %lu\n", topic, tot_len);
+}
+
 static void mqtt_connection_cb(mqtt_client_t *client, void *arg, mqtt_connection_status_t status) {
     if (status == MQTT_CONNECT_ACCEPTED) {
-        pwm_led(LED_PIN_G, 2000);
+        // Liga o LED verde da placa para indicar conexão MQTT bem-sucedida
+        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
         DEBUG_printf("MQTT connected.\n");
+        mqtt_sub_unsub(client, "pico_w/recv", 1, NULL, NULL, 1);
     } else {
-        pwm_led(LED_PIN_G, 0);
-        pwm_led(LED_PIN_R, 2000);
+        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
         DEBUG_printf("MQTT connection failed: %d\n", status);
     }
 }
 
-void mqtt_pub_request_cb(void *arg, err_t err) {
-    // Callback de publicação
-}
+void mqtt_pub_request_cb(void *arg, err_t err) {}
 
 err_t mqtt_test_publish(MQTT_CLIENT_T *state) {
     uint32_t now = to_ms_since_boot(get_absolute_time());
@@ -54,18 +89,11 @@ err_t mqtt_test_publish(MQTT_CLIENT_T *state) {
     {
         last_pub_time = now;
         char buffer[BUFFER_SIZE];
-
-        // 1. Publicar o estado ON/OFF do pino
         snprintf(buffer, BUFFER_SIZE, "%s", monitor_pin_on ? "ON" : "OFF");
         mqtt_publish(state->mqtt_client, "pico_w/pin_status", buffer, strlen(buffer), 0, 0, mqtt_pub_request_cb, state);
-
-        // 2. Publicar a temperatura
         float temperature = read_onboard_temperature();
         snprintf(buffer, BUFFER_SIZE, "%.2f", temperature);
         mqtt_publish(state->mqtt_client, "pico_w/temperature", buffer, strlen(buffer), 0, 0, mqtt_pub_request_cb, state);
-        
-        DEBUG_printf("Pin State: %s, Temp: %.2f C\n", monitor_pin_on ? "ON" : "OFF", temperature);
-
         return ERR_OK;
     }
     return ERR_OK;
@@ -74,23 +102,18 @@ err_t mqtt_test_publish(MQTT_CLIENT_T *state) {
 err_t mqtt_test_connect(MQTT_CLIENT_T *state) {
     struct mqtt_connect_client_info_t ci = {0};
     ci.client_id = "PicoW-Thiago";
+    mqtt_set_inpub_callback(state->mqtt_client, mqtt_pub_start_cb, mqtt_pub_data_cb, state);
     return mqtt_client_connect(state->mqtt_client, &(state->remote_addr), MQTT_SERVER_PORT, mqtt_connection_cb, state, &ci);
 }
 
-// Função para verificar o botão e atualizar o estado
 void check_button_press() {
     static uint32_t last_press_time = 0;
-    static bool last_pin_state = true; // Inicia como HIGH (não pressionado)
-
+    static bool last_pin_state = true;
     bool current_pin_state = gpio_get(MONITOR_PIN);
-
-    // Verifica a borda de descida (de HIGH para LOW)
     if (current_pin_state == false && last_pin_state == true) {
         uint32_t now = to_ms_since_boot(get_absolute_time());
-        // Aplica o debounce
         if (now - last_press_time > DEBOUNCE_DELAY_MS) {
             last_press_time = now;
-            // Inverte o estado
             monitor_pin_on = !monitor_pin_on;
             DEBUG_printf("Button pressed! New state: %s\n", monitor_pin_on ? "ON" : "OFF");
         }
@@ -98,27 +121,18 @@ void check_button_press() {
     last_pin_state = current_pin_state;
 }
 
-
 void mqtt_run_test(MQTT_CLIENT_T *state) {
     state->mqtt_client = mqtt_client_new();
     if (!state->mqtt_client) {
         DEBUG_printf("Failed to create MQTT client\n");
         return;
     }
-
     if (mqtt_test_connect(state) == ERR_OK) {
         while (1) {
             cyw43_arch_poll();
-
             if (mqtt_client_is_connected(state->mqtt_client)) {
-                pwm_led(LED_PIN_R, 0);
-                
-                // Verifica o estado do botão
                 check_button_press();
-
-                // Publica os dados
                 mqtt_test_publish(state);
-                
             } else {
                 DEBUG_printf("Reconnecting...\n");
                 sleep_ms(1000);
