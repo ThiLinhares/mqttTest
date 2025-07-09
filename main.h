@@ -14,12 +14,13 @@
 #include "pico/cyw43_arch.h"
 #include "lwip/apps/mqtt_priv.h"
 #include "hardware/structs/rosc.h"
+#include "display.h"
 
 /* MACROS PI PICO */
 #define LED_PIN_G 11
 #define LED_PIN_B 12
 #define LED_PIN_R 13
-#define MONITOR_PIN 15 // Pino a ser monitorado
+#define MONITOR_PIN 5 // Pino a ser monitorado
 #define PWM_STEPS 2000
 #define DEBOUNCE_DELAY_MS 200
 #define FADE_STEP_DELAY (100) 
@@ -51,6 +52,9 @@ typedef struct MQTT_CLIENT_T_ {
 
 /* FUNÇOES */
 void pinos_start();
+void led_control(uint gpio_pin, bool on);
+void display_init(); // <<< DECLARA A NOVA FUNÇÃO
+void display_update(const char* msg1, const char* msg2); // <<< DECLARA A NOVA FUNÇÃO
 void gpio5_callback(uint gpio, uint32_t events);
 static MQTT_CLIENT_T* mqtt_client_init(void);
 void run_dns_lookup(MQTT_CLIENT_T *state);

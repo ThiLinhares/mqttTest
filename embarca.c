@@ -1,11 +1,7 @@
 #include "main.h"
 
-// Funções não utilizadas foram removidas para clareza,
-// mas a lógica principal está na inicialização dos pinos e no controle do LED.
-
 void pinos_start()
 {
-    // <<< CORREÇÃO: INICIALIZAÇÃO COMO SAÍDA DIGITAL >>>
     // Inicializa os pinos dos LEDs
     gpio_init(LED_PIN_R);
     gpio_init(LED_PIN_G);
@@ -23,11 +19,12 @@ void pinos_start()
     gpio_init(MONITOR_PIN);
     gpio_set_dir(MONITOR_PIN, GPIO_IN);
     gpio_pull_up(MONITOR_PIN);
+
+    // Inicializa o Display OLED
+    display_init();
 }
 
-// <<< CORREÇÃO: NOVA FUNÇÃO DE CONTROLE DIGITAL >>>
-// Substituímos a função pwm_led por esta, muito mais simples.
-// Ela recebe o pino e um booleano (true para ligar, false para desligar)
+// Função para ligar/desligar os LEDs
 void led_control(uint gpio_pin, bool on) {
     gpio_put(gpio_pin, on);
 }

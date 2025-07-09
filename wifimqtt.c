@@ -3,6 +3,11 @@
 static uint32_t last_pub_time = 0;
 err_t mqtt_test_connect(MQTT_CLIENT_T *state);
 
+// Buffer para as duas últimas mensagens
+char last_msg[BUFFER_SIZE] = " ";
+char prev_msg[BUFFER_SIZE] = " ";
+
+
 // Função para ler o sensor de temperatura interno e converter para Celsius
 float read_onboard_temperature() {
     adc_select_input(4);
@@ -19,6 +24,41 @@ static void mqtt_pub_data_cb(void *arg, const u8_t *data, u16_t len, u8_t flags)
         memcpy(buffer, data, len);
         buffer[len] = '\0';
         DEBUG_printf("Command received: %s\n", buffer);
+
+        char display_message[32]; // Buffer para a mensagem em português
+
+        // Traduz o comando recebido para uma string amigável
+        if (strcmp(buffer, "red_on") == 0) {
+            strcpy(display_message, "Vermelho Ligado");
+            led_control(LED_PIN_R, true);
+        } else if (strcmp(buffer, "red_off") == 0) {
+            strcpy(display_message, "Vermelho Desligado");
+            led_control(LED_PIN_R, false);
+        } else if (strcmp(buffer, "green_on") == 0) {
+            strcpy(display_message, "Verde Ligado");
+            led_control(LED_PIN_G, true);
+        } else if (strcmp(buffer, "green_off") == 0) {
+            strcpy(display_message, "Verde Desligado");
+            led_control(LED_PIN_G, false);
+        } else if (strcmp(buffer, "blue_on") == 0) {
+            strcpy(display_message, "Azul Ligado");
+            led_control(LED_PIN_B, true);
+        } else if (strcmp(buffer, "blue_off") == 0) {
+            strcpy(display_message, "Azul Desligado");
+            led_control(LED_PIN_B, false);
+        } else {
+            strcpy(display_message, "Comando invalido"); // Mensagem para comandos não reconhecidos
+        }
+        
+        // <<< LÓGICA DO DISPLAY >>>
+        // Move a última mensagem para a posição da anterior
+        strcpy(prev_msg, last_msg);
+        // Armazena a nova mensagem
+        strcpy(last_msg, buffer);
+        // Atualiza a tela com as duas mensagens
+        display_update(last_msg, prev_msg);
+        // <<< FIM DA LÓGICA DO DISPLAY >>>
+
 
         // <<< CORREÇÃO: CHAMANDO A NOVA FUNÇÃO led_control >>>
         // Comandos para o LED Vermelho (GPIO 13)

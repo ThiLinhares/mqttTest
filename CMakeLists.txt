@@ -14,7 +14,7 @@ endif()
 # ====================================================================================
 # CMakeLists.txt
 
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.13)
 
 # Pull in SDK (must be before project)
 include(pico_sdk_import.cmake)
@@ -31,63 +31,41 @@ endif()
 # Initialize the SDK
 pico_sdk_init()
 
-add_compile_options(-Wall
--Wno-format          # int != int32_t as far as the compiler is concerned because gcc has int32_t as long int
--Wno-unused-function # we have some for the docs that aren't called
--Wno-maybe-uninitialized
+add_executable(wifimqtt
+    main.c
+    wifimqtt.c
+    embarca.c
+    # --- NOVOS ARQUIVOS ---
+    display.c
+    ssd1306/ssd1306.c
 )
 
-if (PICO_CYW43_SUPPORTED) # set by BOARD=pico-w
-    set(WIFI_SSID "@thilinhares" CACHE INTERNAL "WiFi SSID")
-    set(WIFI_PASSWORD "mafredzudo18" CACHE INTERNAL "WiFi password")
-    if (NOT TARGET pico_cyw43_arch)
-        message("Skipping build as support is not available")
-    else()
-        set(WIFI_SSID "${WIFI_SSID}" CACHE INTERNAL "WiFi SSID")
-        set(WIFI_PASSWORD "${WIFI_PASSWORD}" CACHE INTERNAL "WiFi password")
+# enable usb output, disable uart output
+pico_enable_stdio_usb(wifimqtt 1)
+pico_enable_stdio_uart(wifimqtt 0)
 
-        if ("${WIFI_SSID}" STREQUAL "")
-            message("Skipping build as WIFI_SSID is not defined")
-        elseif ("${WIFI_PASSWORD}" STREQUAL "")
-            message("Skipping build as WIFI_PASSWORD is not defined")
-        else()
-            add_executable(wifimqtt
-            wifimqtt.c
-            embarca.c
-            main.c
-            )
 
-            # enable usb output, disable uart output
-            pico_enable_stdio_usb(wifimqtt 0)
-            pico_enable_stdio_usb(wifimqtt 1)
+target_compile_definitions(wifimqtt PRIVATE
+    WIFI_SSID=\"${WIFI_SSID}\"
+    WIFI_PASSWORD=\"${WIFI_PASSWORD}\"
+    NO_SYS=1
+)
 
-            target_compile_definitions(wifimqtt PRIVATE
-            WIFI_SSID=\"${WIFI_SSID}\"
-            WIFI_PASSWORD=\"${WIFI_PASSWORD}\"
-            TEST_TCP_SERVER_IP=\"${TEST_TCP_SERVER_IP}\"
-            NO_SYS=1
-            )
+target_include_directories(wifimqtt PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}
+    ${CMAKE_CURRENT_LIST_DIR}/.. # for our common lwipopts
+)
+      
+target_link_libraries(wifimqtt
+    pico_cyw43_arch_lwip_poll
+    pico_stdlib
+    hardware_i2c  # --- NECESSÁRIO PARA O DISPLAY ---
+    pico_lwip_mbedtls
+    pico_mbedtls
+    pico_lwip_mqtt
+    hardware_pwm
+    hardware_gpio
+    hardware_adc
+)
 
-            target_include_directories(wifimqtt PRIVATE
-                ${CMAKE_CURRENT_LIST_DIR}
-                ${CMAKE_CURRENT_LIST_DIR}/.. # for our common lwipopts
-            )
-            
-
-            target_link_libraries(wifimqtt
-                pico_cyw43_arch_lwip_poll
-                pico_stdlib
-                pico_lwip_mbedtls
-                pico_mbedtls
-                pico_lwip_mqtt
-                hardware_pwm
-                hardware_gpio
-                hardware_adc
-            )
-
-            pico_add_extra_outputs(wifimqtt
-            embarca)
-        endif()
-    endif()
-endif()
-
+pico_add_extra_outputs(wifimqtt)
