@@ -2,7 +2,6 @@
 
 Este repositório contém o código-fonte para um projeto de IoT utilizando o microcontrolador Raspberry Pi Pico W. O dispositivo atua como um cliente MQTT para monitorar sensores locais, exibir dados em um display OLED e permitir o controle remoto de um LED RGB.
 
-![Legenda: Montagem física dos componentes na protoboard.](https://placehold.co/600x400/333/FFF?text=Insira+aqui+uma+foto+da+sua+montagem)
 
 ---
 
@@ -41,8 +40,8 @@ Siga os passos abaixo para compilar e executar o projeto.
 Clone este projeto para a sua máquina local:
 
 ```bash
-git clone [https://github.com/ThiLinhares/mqtttest.git](https://github.com/ThiLinhares/mqtttest.git)
-cd mqtttest
+git clone [https://github.com/ThiLinhares/mqtttest.git]
+
 ```
 
 ### 3. Configurar Credenciais Wi-Fi (Passo Essencial)
