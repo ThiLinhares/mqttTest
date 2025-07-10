@@ -46,8 +46,8 @@ pico_enable_stdio_uart(wifimqtt 0)
 
 
 target_compile_definitions(wifimqtt PRIVATE
-    WIFI_SSID=\"${WIFI_SSID}\"
-    WIFI_PASSWORD=\"${WIFI_PASSWORD}\"
+    WIFI_SSID="@thilinhares"
+    WIFI_PASSWORD="mafredzudo18"
     NO_SYS=1
 )
 
