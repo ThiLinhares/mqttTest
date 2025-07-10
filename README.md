@@ -40,7 +40,7 @@ Siga os passos abaixo para compilar e executar o projeto.
 Clone este projeto para a sua máquina local:
 
 ```bash
-git clone [https://github.com/ThiLinhares/mqtttest.git]
+git clone https://github.com/ThiLinhares/mqttTest.git
 
 ```
 
